@@ -1,0 +1,2 @@
+"CFBundleDisplayName" = "LowFreq";
+"NSMicrophoneUsageDescription" = "The microphone is used to analyze the frequency and strength of noise at home. Sound is analyzed live on the phone and is never recorded or uploaded.";

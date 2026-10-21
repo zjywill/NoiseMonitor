@@ -16,12 +16,14 @@ targets:
     info:
       path: NoiseMonitor/Info.plist
       properties:
-        CFBundleDisplayName: 噪音定位
+        CFBundleDisplayName: 低频猎手
         CFBundleDevelopmentRegion: zh-Hans
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSMicrophoneUsageDescription: 需要用麦克风分析家里噪音的频率和强度。声音只在手机上实时分析，不会录音，也不会上传。
         UILaunchScreen: {}
+        # 只用系统自带的加密（HTTPS 都没有），每次传包不用再回答出口合规问题
+        ITSAppUsesNonExemptEncryption: false
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false

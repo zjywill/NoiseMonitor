@@ -1,0 +1,2 @@
+"CFBundleDisplayName" = "低频猎手";
+"NSMicrophoneUsageDescription" = "需要用麦克风分析家里噪音的频率和强度。声音只在手机上实时分析，不会录音，也不会上传。";

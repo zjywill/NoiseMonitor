@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		04599316391D99BC53F4897D /* TipsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A9A751EB33CAE9A9623460F /* TipsView.swift */; };
 		0759B57467CEC3900D265A39 /* NoiseMonitorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C1A3283295E61966EA48A67 /* NoiseMonitorApp.swift */; };
+		1BAA7A31BC26EF6FC9B8B841 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 52FC204D9A8B12E61B1EBCCB /* InfoPlist.strings */; };
 		5E3C5DAC7453C539063BE697 /* SpotsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97E0B265586F0ADB48DE6B93 /* SpotsView.swift */; };
 		6645DD3BB6439EB1F5940603 /* SpectrumMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5887F83B75681490FBD54A53 /* SpectrumMath.swift */; };
 		759EEDFF41E63B36756CB846 /* ToneAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E121A8FA3D7BC06332F4EE7 /* ToneAnalysis.swift */; };
@@ -23,6 +24,7 @@
 /* Begin PBXFileReference section */
 		0041F0F7A46AC39D87613C7A /* HuntView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HuntView.swift; sourceTree = "<group>"; };
 		01ADEB6697047F1A998CCA0B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		083C5BD7667772565E3F2CDA /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1B8FF10BC8B9287B1F5DE7A4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3A9A751EB33CAE9A9623460F /* TipsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipsView.swift; sourceTree = "<group>"; };
 		4C6DFCCEC65C323DBE922CB7 /* SpectrumAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumAnalyzer.swift; sourceTree = "<group>"; };
@@ -34,6 +36,7 @@
 		637D55E2EA632F3A8E0232A6 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		6C1A3283295E61966EA48A67 /* NoiseMonitorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoiseMonitorApp.swift; sourceTree = "<group>"; };
 		97E0B265586F0ADB48DE6B93 /* SpotsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsView.swift; sourceTree = "<group>"; };
+		F1D2586085CF22619489285A /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -73,6 +76,7 @@
 				01ADEB6697047F1A998CCA0B /* Info.plist */,
 				6C1A3283295E61966EA48A67 /* NoiseMonitorApp.swift */,
 				EF428A1215686F01D49A599E /* Audio */,
+				52FC204D9A8B12E61B1EBCCB /* InfoPlist.strings */,
 				47885EB71420DBED98220EF2 /* Model */,
 				495D4211805B7264554DF590 /* Views */,
 			);
@@ -137,6 +141,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
+				en,
 				"zh-Hans",
 			);
 			mainGroup = E05366A35327796991F99697;
@@ -157,6 +162,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E256BCC94FA0A8E72600DF69 /* Assets.xcassets in Resources */,
+				1BAA7A31BC26EF6FC9B8B841 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -181,6 +187,18 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		52FC204D9A8B12E61B1EBCCB /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				083C5BD7667772565E3F2CDA /* en */,
+				F1D2586085CF22619489285A /* zh-Hans */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		18D8B8BF9E2EEA4114A04E4D /* Debug */ = {
