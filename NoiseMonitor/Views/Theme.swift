@@ -253,7 +253,7 @@ struct TopBar<Trailing: View>: ViewModifier {
                 .padding(.horizontal, 18)
                 .padding(.top, 4)
                 .padding(.bottom, 10)
-                .background(Theme.room.opacity(0.94).ignoresSafeArea(edges: .top))
+                .background(Theme.room.ignoresSafeArea(edges: .top))
             }
             .background(Theme.room.ignoresSafeArea())
     }

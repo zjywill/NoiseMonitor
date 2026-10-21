@@ -82,6 +82,11 @@ final class NoiseHunter {
         defer { isStarting = false }
         if isRunning { stop() }
 
+        if Self.isDemo {
+            startDemo()
+            return
+        }
+
         guard await AVAudioApplication.requestRecordPermission() else {
             errorMessage = "没有麦克风权限。请到「设置 > 隐私与安全性 > 麦克风」里打开。"
             return
@@ -117,6 +122,8 @@ final class NoiseHunter {
 
     func stop() {
         guard isRunning else { return }
+        demoTask?.cancel()
+        demoTask = nil
         engine.stop()
         engine.inputNode.removeTap(onBus: 0)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
@@ -125,6 +132,50 @@ final class NoiseHunter {
         hapticTask?.cancel()
         hapticTask = nil
         UIApplication.shared.isIdleTimerDisabled = false
+    }
+
+    // MARK: - 演示模式
+
+    /// 截图用：启动参数带 -demoSignal 时不开麦克风，改喂一段合成的 100 Hz 嗡声（模拟器拿不到 Mac 麦克风的声音）
+    static let isDemo = ProcessInfo.processInfo.arguments.contains("-demoSignal")
+    @ObservationIgnored private var demoTask: Task<Void, Never>?
+
+    private func startDemo() {
+        let analyzer = analyzer
+        let sampleRate = 48_000.0
+        analyzer.configure(sampleRate: sampleRate)
+        if spotStore.spots.isEmpty {
+            for (name, level) in [("卫生间管道墙", 63.8), ("卧室床头", 58.2), ("客厅墙角", 55.1), ("厨房", 49.6)] {
+                spotStore.add(Spot(name: name, level: level, frequency: 100.0, date: .now))
+            }
+        }
+        errorMessage = nil
+        smoothed = []
+        isRunning = true
+
+        demoTask = Task.detached {
+            var buffer = [Float](repeating: 0, count: 4096)
+            var time = 0.0
+            var rumble = 0.0
+            while !Task.isCancelled {
+                // 强度缓慢起伏，像拿着手机在屋里走动
+                let gain = 0.006 * (1.3 + sin(time * 0.4))
+                for i in buffer.indices {
+                    let t = time + Double(i) / sampleRate
+                    // 积分出来的随机游走是越低频越强的底噪，比白噪声更像真实房间
+                    rumble = rumble * 0.999 + Double.random(in: -1...1) * 0.002
+                    buffer[i] = Float(
+                        gain * sin(2 * .pi * 100.02 * t)
+                            + gain * 0.35 * sin(2 * .pi * 200.04 * t)
+                            + rumble
+                            + 0.002 * Double.random(in: -1...1)
+                    )
+                }
+                buffer.withUnsafeBufferPointer { analyzer.append($0.baseAddress!, count: $0.count) }
+                time += Double(buffer.count) / sampleRate
+                try? await Task.sleep(for: .seconds(Double(buffer.count) / sampleRate))
+            }
+        }
     }
 
     // MARK: - 操作
