@@ -22,13 +22,6 @@ struct HuntView: View {
                         StrengthCard()
                     }
                     .fixedSize(horizontal: false, vertical: true)
-                    Text(hint)
-                        .font(Theme.font(.footnote, .medium))
-                        .foregroundStyle(Theme.inkSecondary)
-                        // 提示文字长短不一，固定占两行，下面的卡片才不会跟着上下跳
-                        .lineLimit(2, reservesSpace: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 4)
                     SpectrumCard()
                     AnalysisCard()
                 }
@@ -49,21 +42,6 @@ struct HuntView: View {
             }
             .sheet(isPresented: $showTips) { TipsView() }
         }
-    }
-
-    private var hint: String {
-        if let locked = hunter.lockedFrequency {
-            guard let lockIn = hunter.lockIn else {
-                return "已锁定 \(locked.formatted(decimals: 1)) Hz，锁相检测启动中…"
-            }
-            let snr = max(lockIn.snr, 0).formatted(decimals: 0)
-            return hunter.isWeakSignal
-                ? "信号太弱，只比底噪高 \(snr) dB，读数会跳。停下来多等几秒再看。"
-                : "锁相检测中，比底噪高 \(snr) dB。拿着手机慢慢走，越靠近声源强度越大、震动越快。"
-        }
-        return hunter.peak == nil
-            ? "到噪音明显的地方等几秒，这里会出现最明显的低频。"
-            : "找到了！点「锁定」或在频谱上点那个峰，然后拿着手机慢慢走。"
     }
 }
 
@@ -210,9 +188,6 @@ private struct SpectrumCard: View {
                 }
             }
             .frame(height: 190)
-            Text("点一下图上的峰，就能锁定那个频率。")
-                .font(Theme.font(.footnote, .medium))
-                .foregroundStyle(Theme.inkSecondary)
         }
     }
 }
