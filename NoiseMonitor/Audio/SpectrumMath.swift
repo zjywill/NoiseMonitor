@@ -11,8 +11,12 @@ struct Peak: Equatable, Sendable {
 
 /// 频谱上的纯计算，不依赖任何状态。
 enum SpectrumMath {
-    /// 把功率换算成好读的 dB。手机麦克风没校准，这只是相对值，用来比较不同位置足够了。
+    /// 功率（幅度² 刻度）换算成 dB 的基准：幅度² 比均方大 3 dB，所以等于「dBFS(RMS) + 103」。
+    /// 有人拿 iPhone 和手持声级计对比，得到的偏移约 102.5（github.com/on-par/sound-buddy/issues/1611），
+    /// 这里取 103 作默认，不同手机会差几 dB，用 calibration 校准
     static let levelOffset = 100.0
+    /// 用户校准的偏移（dB）。主线程写、音频线程读，一个 Double 的读写不会出事
+    nonisolated(unsafe) static var calibration = 0.0
     /// 至少比底噪高这么多，才算「有一个明显的频率」。纯白噪声里随机冒出的峰能到 9 dB 左右
     static let minProminence = 12.0
     /// 谐波的门槛可以低一点，但也要高过随机起伏
@@ -23,7 +27,7 @@ enum SpectrumMath {
     }
 
     static func decibels(_ power: Double) -> Double {
-        10 * log10(max(power, 1e-14)) + levelOffset
+        10 * log10(max(power, 1e-14)) + levelOffset + calibration
     }
 
     /// 在 [low, high] Hz 里找功率最大的 bin，不管它是否明显。用于锁定频率之后。

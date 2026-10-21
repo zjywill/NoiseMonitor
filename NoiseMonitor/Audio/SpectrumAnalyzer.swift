@@ -20,12 +20,14 @@ final class SpectrumAnalyzer: @unchecked Sendable {
 
     var onFrame: (@Sendable (SpectrumFrame) -> Void)?
     var onLockIn: (@Sendable (LockInReading) -> Void)?
+    var onLevel: (@Sendable (LevelReading) -> Void)?
 
     /// 主线程设、音频线程读，所以用锁
     private let lockInLock = NSLock()
     private var lockInTarget: Double?
     /// 只在音频线程上用
     private var lockIn: LockInDetector?
+    private var levelMeter: LevelMeter?
 
     private let log2n = vDSP_Length(log2(Double(fftSize)))
     private let setup: FFTSetup
@@ -68,6 +70,7 @@ final class SpectrumAnalyzer: @unchecked Sendable {
         let binWidth = sampleRate / Double(Self.fftSize)
         power = [Float](repeating: 0, count: Int(Self.maxFrequency / binWidth) + 1)
         lockIn = nil
+        levelMeter = LevelMeter(sampleRate: sampleRate)
     }
 
     /// 锁定某个频率后开锁相检测；nil 关掉
@@ -82,6 +85,11 @@ final class SpectrumAnalyzer: @unchecked Sendable {
         }
         if let lockIn, let reading = lockIn.process(samples, count: count) {
             onLockIn?(reading)
+        }
+        if let levelMeter {
+            for reading in levelMeter.process(samples, count: count) {
+                onLevel?(reading)
+            }
         }
 
         for i in 0..<count {

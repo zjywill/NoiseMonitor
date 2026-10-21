@@ -2,6 +2,12 @@ import AVFoundation
 import Observation
 import UIKit
 
+struct LevelPoint: Identifiable {
+    let time: Date
+    let level: Double
+    var id: Date { time }
+}
+
 struct SpectrumPoint: Identifiable {
     let frequency: Double
     let level: Double
@@ -36,7 +42,31 @@ final class NoiseHunter {
     private(set) var maxLevel: Double?
     private(set) var analysis: ToneAnalysis?
     private(set) var measurement: SpotMeasurement?
-    var hapticsEnabled = true
+    // 现在只做监测，找噪音的功能先不露出来，震动默认关
+    var hapticsEnabled = false
+
+    // MARK: 监测
+    static let historyDuration: TimeInterval = 120
+    /// 当前声级：最近 1 秒的 A 计权等效声级 LAeq,1s
+    private(set) var currentLevel: Double?
+    /// 同一时刻的不计权声级 LZeq,1s，低频多的时候比 A 计权高很多
+    private(set) var currentLevelZ: Double?
+    /// 从开始监测到现在的 LAeq
+    private(set) var averageLevel: Double?
+    /// 当前声级（1 秒）出现过的最大值
+    private(set) var maxCurrentLevel: Double?
+    private(set) var monitorStart: Date?
+    private(set) var levelHistory: [LevelPoint] = []
+
+    /// 校准偏移（dB），存在 UserDefaults 里
+    var calibration: Double = UserDefaults.standard.double(forKey: "calibrationOffset") {
+        didSet {
+            UserDefaults.standard.set(calibration, forKey: "calibrationOffset")
+            SpectrumMath.calibration = calibration
+            // 换了校准，之前的统计就不是同一个刻度了
+            resetStats()
+        }
+    }
 
     var mode: Mode = .auto {
         didSet {
@@ -87,6 +117,9 @@ final class NoiseHunter {
     @ObservationIgnored private var history: [(time: Date, frequency: Double)] = []
     @ObservationIgnored private var hapticTask: Task<Void, Never>?
     @ObservationIgnored private var isStarting = false
+    @ObservationIgnored private var recentBlocks: [LevelReading] = []
+    @ObservationIgnored private var sessionEnergyA = 0.0
+    @ObservationIgnored private var sessionDuration = 0.0
 
     init(spotStore: SpotStore) {
         self.spotStore = spotStore
@@ -97,6 +130,10 @@ final class NoiseHunter {
         analyzer.onLockIn = { reading in
             Task { @MainActor in self.handleLockIn(reading) }
         }
+        analyzer.onLevel = { reading in
+            Task { @MainActor in self.handleLevel(reading) }
+        }
+        SpectrumMath.calibration = calibration
     }
 
     // MARK: - 启停
@@ -141,6 +178,7 @@ final class NoiseHunter {
         errorMessage = nil
         smoothed = []
         isRunning = true
+        resetStats()
         UIApplication.shared.isIdleTimerDisabled = true
         startHaptics()
     }
@@ -178,6 +216,7 @@ final class NoiseHunter {
         errorMessage = nil
         smoothed = []
         isRunning = true
+        resetStats()
 
         demoTask = Task.detached {
             var buffer = [Float](repeating: 0, count: 4096)
@@ -201,6 +240,51 @@ final class NoiseHunter {
                 time += Double(buffer.count) / sampleRate
                 try? await Task.sleep(for: .seconds(Double(buffer.count) / sampleRate))
             }
+        }
+    }
+
+    // MARK: - 监测
+
+    /// 清空平均值、最大值和历史曲线，从现在重新算
+    func resetStats() {
+        recentBlocks.removeAll()
+        sessionEnergyA = 0
+        sessionDuration = 0
+        currentLevel = nil
+        currentLevelZ = nil
+        averageLevel = nil
+        maxCurrentLevel = nil
+        levelHistory.removeAll()
+        monitorStart = isRunning ? .now : nil
+    }
+
+    /// 每块（约 0.34 秒）一个读数。都按能量平均（等效声级 Leq），不是对 dB 值取平均
+    private func handleLevel(_ reading: LevelReading) {
+        guard isRunning else { return }
+
+        // 当前声级：最近 1 秒（凑整到 3 块，约 1.02 秒）
+        recentBlocks.append(reading)
+        while recentBlocks.count > 1, recentBlocks.dropFirst().reduce(0, { $0 + $1.duration }) >= 1 {
+            recentBlocks.removeFirst()
+        }
+        let recentDuration = recentBlocks.reduce(0) { $0 + $1.duration }
+        let meanA = recentBlocks.reduce(0) { $0 + $1.meanSquareA * $1.duration } / recentDuration
+        let meanZ = recentBlocks.reduce(0) { $0 + $1.meanSquareZ * $1.duration } / recentDuration
+        // 均方换到频谱同一刻度：幅度² = 2 × 均方
+        let level = SpectrumMath.decibels(2 * meanA)
+        currentLevel = level
+        currentLevelZ = SpectrumMath.decibels(2 * meanZ)
+        maxCurrentLevel = max(maxCurrentLevel ?? level, level)
+
+        sessionEnergyA += reading.meanSquareA * reading.duration
+        sessionDuration += reading.duration
+        averageLevel = SpectrumMath.decibels(2 * sessionEnergyA / sessionDuration)
+
+        let now = Date()
+        levelHistory.append(LevelPoint(time: now, level: level))
+        let cutoff = now.addingTimeInterval(-Self.historyDuration)
+        if let first = levelHistory.firstIndex(where: { $0.time >= cutoff }), first > 0 {
+            levelHistory.removeFirst(first)
         }
     }
 
