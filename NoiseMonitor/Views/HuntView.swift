@@ -28,7 +28,7 @@ struct HuntView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
             }
-            .topBar("找噪音") {
+            .topBar("低频猎手") {
                 RoundStickerButton(systemImage: "lightbulb.fill", color: Theme.yellow, foreground: Theme.ink, label: "使用技巧") {
                     showTips = true
                 }
