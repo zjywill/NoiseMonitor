@@ -39,6 +39,7 @@ final class NoiseHunter {
     var mode: Mode = .auto {
         didSet {
             guard mode != oldValue else { return }
+            trackedFrequency = nil
             maxLevel = nil
             history.removeAll()
             analysis = nil
@@ -221,14 +222,19 @@ final class NoiseHunter {
     // MARK: - 处理每一帧
 
     @ObservationIgnored private var currentBinWidth: Double?
+    /// 自动模式下正在跟踪的频率：最近一次明确找到的峰
+    @ObservationIgnored private var trackedFrequency: Double?
+    @ObservationIgnored private var lastClearPeak = Date.distantPast
+    /// 找不到明确的峰之后，继续跟踪原频率多久才放弃
+    private static let trackHold: TimeInterval = 8
 
     private func process(_ frame: SpectrumFrame) {
         guard isRunning else { return }
 
-        // 轻微平滑一下，读数不至于乱跳
+        // 平滑一下（时间常数约半秒），真实房间的底噪起伏大，不平滑读数会乱跳
         if smoothed.count == frame.power.count {
             for i in smoothed.indices {
-                smoothed[i] = 0.5 * smoothed[i] + 0.5 * frame.power[i]
+                smoothed[i] = 0.7 * smoothed[i] + 0.3 * frame.power[i]
             }
         } else {
             smoothed = frame.power
@@ -242,11 +248,26 @@ final class NoiseHunter {
 
         switch mode {
         case .auto:
-            peak = SpectrumMath.mostProminentPeak(
+            let now = Date()
+            if let found = SpectrumMath.mostProminentPeak(
                 in: smoothed, binWidth: binWidth,
                 from: Self.searchRange.lowerBound, to: Self.searchRange.upperBound,
-                previous: peak?.frequency
-            )
+                previous: trackedFrequency
+            ) {
+                peak = found
+                trackedFrequency = found.frequency
+                lastClearPeak = now
+            } else if let tracked = trackedFrequency, now.timeIntervalSince(lastClearPeak) < Self.trackHold {
+                // 底噪一时盖过了峰，不清空：继续读之前那个频率附近的强度。
+                // 以 trackedFrequency 为中心找，而不是上一帧的峰，免得一路漂到别的频率上
+                peak = SpectrumMath.strongestPeak(
+                    in: smoothed, binWidth: binWidth,
+                    from: tracked - 2, to: tracked + 2
+                )
+            } else {
+                peak = nil
+                trackedFrequency = nil
+            }
         case .locked(let center):
             peak = SpectrumMath.strongestPeak(
                 in: smoothed, binWidth: binWidth,
@@ -267,10 +288,8 @@ final class NoiseHunter {
         }
         history.removeAll { now.timeIntervalSince($0.time) > Self.historyWindow }
 
-        guard history.count >= 20, let first = history.first, now.timeIntervalSince(first.time) >= 4 else {
-            analysis = nil
-            return
-        }
+        // 样本不够时保留上一次的判断，不清空，卡片内容不至于一会儿有一会儿没有
+        guard history.count >= 20, let first = history.first, now.timeIntervalSince(first.time) >= 4 else { return }
         let frequencies = history.map(\.frequency)
         let mean = frequencies.reduce(0, +) / Double(frequencies.count)
         let harmonics = [2.0, 3.0].compactMap { multiple -> Double? in

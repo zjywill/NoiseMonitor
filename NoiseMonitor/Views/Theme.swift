@@ -110,7 +110,8 @@ struct StickerCard<Accessory: View, Content: View>: View {
             content()
         }
         .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        // maxHeight 让并排的两张卡一样高
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .panel()
     }
 }
