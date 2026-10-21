@@ -2,12 +2,6 @@ import AVFoundation
 import Observation
 import UIKit
 
-struct LevelPoint: Identifiable {
-    let time: Date
-    let level: Double
-    var id: Date { time }
-}
-
 struct SpectrumPoint: Identifiable {
     let frequency: Double
     let level: Double
@@ -46,7 +40,6 @@ final class NoiseHunter {
     var hapticsEnabled = false
 
     // MARK: 监测
-    static let historyDuration: TimeInterval = 120
     /// 当前声级：最近 1 秒的 A 计权等效声级 LAeq,1s
     private(set) var currentLevel: Double?
     /// 同一时刻的不计权声级 LZeq,1s，低频多的时候比 A 计权高很多
@@ -56,7 +49,6 @@ final class NoiseHunter {
     /// 当前声级（1 秒）出现过的最大值
     private(set) var maxCurrentLevel: Double?
     private(set) var monitorStart: Date?
-    private(set) var levelHistory: [LevelPoint] = []
 
     /// 校准偏移（dB），存在 UserDefaults 里
     var calibration: Double = UserDefaults.standard.double(forKey: "calibrationOffset") {
@@ -245,7 +237,7 @@ final class NoiseHunter {
 
     // MARK: - 监测
 
-    /// 清空平均值、最大值和历史曲线，从现在重新算
+    /// 清空平均值和最大值，从现在重新算
     func resetStats() {
         recentBlocks.removeAll()
         sessionEnergyA = 0
@@ -254,7 +246,6 @@ final class NoiseHunter {
         currentLevelZ = nil
         averageLevel = nil
         maxCurrentLevel = nil
-        levelHistory.removeAll()
         monitorStart = isRunning ? .now : nil
     }
 
@@ -279,13 +270,6 @@ final class NoiseHunter {
         sessionEnergyA += reading.meanSquareA * reading.duration
         sessionDuration += reading.duration
         averageLevel = SpectrumMath.decibels(2 * sessionEnergyA / sessionDuration)
-
-        let now = Date()
-        levelHistory.append(LevelPoint(time: now, level: level))
-        let cutoff = now.addingTimeInterval(-Self.historyDuration)
-        if let first = levelHistory.firstIndex(where: { $0.time >= cutoff }), first > 0 {
-            levelHistory.removeFirst(first)
-        }
     }
 
     // MARK: - 操作

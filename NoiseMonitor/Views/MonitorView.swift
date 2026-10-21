@@ -1,7 +1,7 @@
 import Charts
 import SwiftUI
 
-/// 主界面：只做监测——当前声级、统计、最近两分钟的曲线、频谱
+/// 主界面：只做监测——当前声级、统计、频谱
 struct MonitorView: View {
     @Environment(NoiseHunter.self) private var hunter
     @State private var showCalibration = false
@@ -22,7 +22,6 @@ struct MonitorView: View {
                         StatsCard()
                     }
                     .fixedSize(horizontal: false, vertical: true)
-                    HistoryCard()
                     SpectrumCard()
                 }
                 .padding(.horizontal, 16)
@@ -116,40 +115,6 @@ private struct StatsCard: View {
         let seconds = max(Int(now.timeIntervalSince(start)), 0)
         let h = seconds / 3600, m = seconds / 60 % 60, s = seconds % 60
         return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%02d:%02d", m, s)
-    }
-}
-
-private struct HistoryCard: View {
-    @Environment(NoiseHunter.self) private var hunter
-
-    var body: some View {
-        StickerCard(title: "最近 2 分钟", systemImage: "waveform.path", color: Theme.sky) {
-            TimelineView(.periodic(from: .now, by: 1)) { context in
-                Chart(hunter.levelHistory) { point in
-                    LineMark(
-                        x: .value("时间", point.time),
-                        y: .value("dB(A)", point.level)
-                    )
-                    .interpolationMethod(.monotone)
-                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                    .foregroundStyle(Theme.sky)
-                }
-                .chartXScale(domain: context.date.addingTimeInterval(-NoiseHunter.historyDuration)...context.date)
-                .chartYScale(domain: 20...100)
-                .chartXAxis {
-                    AxisMarks(values: .stride(by: .second, count: 30)) { _ in
-                        AxisGridLine().foregroundStyle(Theme.track)
-                    }
-                }
-                .chartYAxis {
-                    AxisMarks(values: [20, 40, 60, 80, 100]) { _ in
-                        AxisGridLine().foregroundStyle(Theme.track)
-                        AxisValueLabel().font(Theme.font(.caption2, .semibold))
-                    }
-                }
-            }
-            .frame(height: 130)
-        }
     }
 }
 
