@@ -19,6 +19,13 @@ final class SpectrumAnalyzer: @unchecked Sendable {
     private static let hopSeconds = 0.15
 
     var onFrame: (@Sendable (SpectrumFrame) -> Void)?
+    var onLockIn: (@Sendable (LockInReading) -> Void)?
+
+    /// 主线程设、音频线程读，所以用锁
+    private let lockInLock = NSLock()
+    private var lockInTarget: Double?
+    /// 只在音频线程上用
+    private var lockIn: LockInDetector?
 
     private let log2n = vDSP_Length(log2(Double(fftSize)))
     private let setup: FFTSetup
@@ -60,9 +67,23 @@ final class SpectrumAnalyzer: @unchecked Sendable {
         samplesSinceLastFrame = 0
         let binWidth = sampleRate / Double(Self.fftSize)
         power = [Float](repeating: 0, count: Int(Self.maxFrequency / binWidth) + 1)
+        lockIn = nil
+    }
+
+    /// 锁定某个频率后开锁相检测；nil 关掉
+    func setLockIn(frequency: Double?) {
+        lockInLock.withLock { lockInTarget = frequency }
     }
 
     func append(_ samples: UnsafePointer<Float>, count: Int) {
+        let target = lockInLock.withLock { lockInTarget }
+        if target != lockIn?.center {
+            lockIn = target.map { LockInDetector(frequency: $0, sampleRate: sampleRate) }
+        }
+        if let lockIn, let reading = lockIn.process(samples, count: count) {
+            onLockIn?(reading)
+        }
+
         for i in 0..<count {
             ring[writeIndex] = samples[i]
             writeIndex = (writeIndex + 1) & (Self.fftSize - 1)

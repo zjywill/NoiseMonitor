@@ -19,7 +19,11 @@ enum SpectrumMath {
     static let minHarmonicProminence = 10.0
 
     static func decibels(_ power: Float) -> Double {
-        10 * log10(Double(max(power, 1e-14))) + levelOffset
+        decibels(Double(power))
+    }
+
+    static func decibels(_ power: Double) -> Double {
+        10 * log10(max(power, 1e-14)) + levelOffset
     }
 
     /// 在 [low, high] Hz 里找功率最大的 bin，不管它是否明显。用于锁定频率之后。

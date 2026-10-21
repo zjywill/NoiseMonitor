@@ -53,7 +53,13 @@ struct HuntView: View {
 
     private var hint: String {
         if let locked = hunter.lockedFrequency {
-            return "已锁定 \(locked.formatted(decimals: 1)) Hz。拿着手机慢慢走，越靠近声源强度越大、震动越快。"
+            guard let lockIn = hunter.lockIn else {
+                return "已锁定 \(locked.formatted(decimals: 1)) Hz，锁相检测启动中…"
+            }
+            let snr = max(lockIn.snr, 0).formatted(decimals: 0)
+            return hunter.isWeakSignal
+                ? "信号太弱，只比底噪高 \(snr) dB，读数会跳。停下来多等几秒再看。"
+                : "锁相检测中，比底噪高 \(snr) dB。拿着手机慢慢走，越靠近声源强度越大、震动越快。"
         }
         return hunter.peak == nil
             ? "到噪音明显的地方等几秒，这里会出现最明显的低频。"
@@ -65,12 +71,14 @@ struct HuntView: View {
 private struct Reading: View {
     let value: String?
     let unit: String
+    /// 信号太弱、读数不可靠时变灰
+    var dimmed = false
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 3) {
             Text(value ?? "--")
                 .font(Theme.number(36))
-                .foregroundStyle(value == nil ? Theme.disabledFill : Theme.ink)
+                .foregroundStyle(value == nil ? Theme.disabledFill : dimmed ? Theme.inkSecondary : Theme.ink)
                 .monospacedDigit()
                 .contentTransition(.numericText())
                 .lineLimit(1)
@@ -87,7 +95,7 @@ private struct FrequencyCard: View {
 
     var body: some View {
         StickerCard(title: "频率", systemImage: "tuningfork", color: Theme.sky) {
-            Reading(value: hunter.peak.map { $0.frequency.formatted(decimals: 1) }, unit: "Hz")
+            Reading(value: hunter.displayFrequency.map { $0.formatted(decimals: 1) }, unit: "Hz")
             Spacer(minLength: 0)
             if hunter.lockedFrequency != nil {
                 Button(action: hunter.unlock) {
@@ -120,7 +128,7 @@ private struct StrengthCard: View {
                 .foregroundStyle(Theme.primary)
                 .disabled(hunter.maxLevel == nil)
         } content: {
-            Reading(value: level.map { $0.formatted(decimals: 0) }, unit: "dB")
+            Reading(value: level.map { $0.formatted(decimals: 0) }, unit: "dB", dimmed: hunter.isWeakSignal)
             Spacer(minLength: 0)
             LevelBar(fraction: fraction)
             Text(summary)
@@ -132,7 +140,7 @@ private struct StrengthCard: View {
         }
     }
 
-    private var level: Double? { hunter.peak?.level }
+    private var level: Double? { hunter.strength }
 
     private var below: Double? {
         guard let level, let max = hunter.maxLevel else { return nil }

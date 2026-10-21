@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		03BC951261E1C6532D786050 /* LockInDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3E21262312CD2AE5C64A1A /* LockInDetector.swift */; };
 		04599316391D99BC53F4897D /* TipsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A9A751EB33CAE9A9623460F /* TipsView.swift */; };
 		0759B57467CEC3900D265A39 /* NoiseMonitorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C1A3283295E61966EA48A67 /* NoiseMonitorApp.swift */; };
 		1BAA7A31BC26EF6FC9B8B841 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 52FC204D9A8B12E61B1EBCCB /* InfoPlist.strings */; };
@@ -36,6 +37,7 @@
 		637D55E2EA632F3A8E0232A6 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		6C1A3283295E61966EA48A67 /* NoiseMonitorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoiseMonitorApp.swift; sourceTree = "<group>"; };
 		97E0B265586F0ADB48DE6B93 /* SpotsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsView.swift; sourceTree = "<group>"; };
+		CF3E21262312CD2AE5C64A1A /* LockInDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockInDetector.swift; sourceTree = "<group>"; };
 		F1D2586085CF22619489285A /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -94,6 +96,7 @@
 		EF428A1215686F01D49A599E /* Audio */ = {
 			isa = PBXGroup;
 			children = (
+				CF3E21262312CD2AE5C64A1A /* LockInDetector.swift */,
 				4C6DFCCEC65C323DBE922CB7 /* SpectrumAnalyzer.swift */,
 				5887F83B75681490FBD54A53 /* SpectrumMath.swift */,
 			);
@@ -174,6 +177,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F7A112368697B37E46ECAFB3 /* HuntView.swift in Sources */,
+				03BC951261E1C6532D786050 /* LockInDetector.swift in Sources */,
 				8F0223F5D8E97D76A02060B4 /* NoiseHunter.swift in Sources */,
 				0759B57467CEC3900D265A39 /* NoiseMonitorApp.swift in Sources */,
 				AE672A03AA2C63BB27F709AC /* SpectrumAnalyzer.swift in Sources */,
@@ -207,7 +211,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				INFOPLIST_FILE = NoiseMonitor/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -226,7 +230,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				INFOPLIST_FILE = NoiseMonitor/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

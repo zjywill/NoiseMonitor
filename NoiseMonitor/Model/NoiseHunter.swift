@@ -30,6 +30,8 @@ final class NoiseHunter {
     private(set) var spectrum: [SpectrumPoint] = []
     /// 当前跟踪到的峰；自动模式下没有明显频率时为 nil
     private(set) var peak: Peak?
+    /// 锁定后锁相检测的最新结果
+    private(set) var lockIn: LockInReading?
     /// 这一轮走动中见过的最高强度
     private(set) var maxLevel: Double?
     private(set) var analysis: ToneAnalysis?
@@ -39,6 +41,8 @@ final class NoiseHunter {
     var mode: Mode = .auto {
         didSet {
             guard mode != oldValue else { return }
+            analyzer.setLockIn(frequency: lockedFrequency)
+            lockIn = nil
             trackedFrequency = nil
             maxLevel = nil
             history.removeAll()
@@ -49,6 +53,23 @@ final class NoiseHunter {
     var lockedFrequency: Double? {
         if case .locked(let frequency) = mode { frequency } else { nil }
     }
+
+    /// 显示的强度：锁定后用锁相检测（更灵敏、扣掉了底噪），没锁定时用频谱峰
+    var strength: Double? {
+        lockedFrequency == nil ? peak?.level : lockIn?.level
+    }
+
+    /// 显示的频率：锁定后用锁相跟踪到的精确频率
+    var displayFrequency: Double? {
+        lockedFrequency == nil ? peak?.frequency : (lockIn?.frequency ?? peak?.frequency)
+    }
+
+    /// 锁定后单频只比底噪高不到 6 dB：单次读数会上下跳好几 dB，要停下来多等几秒
+    var isWeakSignal: Bool {
+        guard lockedFrequency != nil, let lockIn else { return false }
+        return lockIn.snr < Self.weakSNR
+    }
+    private static let weakSNR = 6.0
 
     let spotStore: SpotStore
 
@@ -72,6 +93,9 @@ final class NoiseHunter {
         // 这个对象跟 App 同生命周期，直接强引用就行
         analyzer.onFrame = { frame in
             Task { @MainActor in self.process(frame) }
+        }
+        analyzer.onLockIn = { reading in
+            Task { @MainActor in self.handleLockIn(reading) }
         }
     }
 
@@ -130,6 +154,7 @@ final class NoiseHunter {
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         isRunning = false
         measurement = nil
+        lockIn = nil
         hapticTask?.cancel()
         hapticTask = nil
         UIApplication.shared.isIdleTimerDisabled = false
@@ -200,7 +225,7 @@ final class NoiseHunter {
     }
 
     func resetMax() {
-        maxLevel = peak?.level
+        maxLevel = strength
     }
 
     /// 在当前位置测 10 秒。还没锁定的话先锁定当前频率；连频率都没找到就返回 false。
@@ -276,9 +301,23 @@ final class NoiseHunter {
         }
 
         guard let peak else { return }
-        maxLevel = max(maxLevel ?? peak.level, peak.level)
         updateAnalysis(with: peak, binWidth: binWidth)
-        updateMeasurement(with: peak)
+        // 锁定后强度改由锁相检测给（见 handleLockIn），这里只管没锁定的时候
+        if lockedFrequency == nil {
+            record(level: peak.level, frequency: peak.frequency)
+        }
+    }
+
+    private func handleLockIn(_ reading: LockInReading) {
+        // 切换锁定之后，音频线程上可能还有旧频率的结果在路上
+        guard isRunning, reading.center == lockedFrequency else { return }
+        lockIn = reading
+        record(level: reading.level, frequency: reading.frequency)
+    }
+
+    private func record(level: Double, frequency: Double) {
+        maxLevel = max(maxLevel ?? level, level)
+        updateMeasurement(level: level, frequency: frequency)
     }
 
     private func updateAnalysis(with peak: Peak, binWidth: Double) {
@@ -302,9 +341,9 @@ final class NoiseHunter {
         analysis = ToneAnalysis(frequencies: frequencies, harmonics: harmonics)
     }
 
-    private func updateMeasurement(with peak: Peak) {
+    private func updateMeasurement(level: Double, frequency: Double) {
         guard var current = measurement else { return }
-        current.energy += pow(10, peak.level / 10)
+        current.energy += pow(10, level / 10)
         current.count += 1
         current.progress = min(Date().timeIntervalSince(current.start) / Self.spotDuration, 1)
 
@@ -312,7 +351,7 @@ final class NoiseHunter {
             spotStore.add(Spot(
                 name: current.name,
                 level: 10 * log10(current.energy / Double(current.count)),
-                frequency: lockedFrequency ?? peak.frequency,
+                frequency: frequency,
                 date: .now
             ))
             measurement = nil
@@ -325,7 +364,7 @@ final class NoiseHunter {
 
     /// 离这一轮最高值越近，震得越快：最高处 0.08 秒一下，低 15 dB 以上 1 秒一下
     private var hapticInterval: Double? {
-        guard let level = peak?.level, let maxLevel else { return nil }
+        guard let level = strength, let maxLevel else { return nil }
         let below = min(max((maxLevel - level) / 15, 0), 1)
         return 0.08 + below * 0.92
     }
