@@ -1,0 +1,35 @@
+name: NoiseMonitor
+options:
+  bundleIdPrefix: com.pinapia
+  deploymentTarget: { iOS: "17.0" }
+  developmentLanguage: zh-Hans
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: "NGM7GX8DGB"
+    CODE_SIGN_STYLE: Automatic
+targets:
+  NoiseMonitor:
+    type: application
+    platform: iOS
+    sources: [NoiseMonitor]
+    info:
+      path: NoiseMonitor/Info.plist
+      properties:
+        CFBundleDisplayName: 噪音定位
+        CFBundleDevelopmentRegion: zh-Hans
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSMicrophoneUsageDescription: 需要用麦克风分析家里噪音的频率和强度。声音只在手机上实时分析，不会录音，也不会上传。
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pinapia.NoiseMonitor
+        TARGETED_DEVICE_FAMILY: "1"
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
